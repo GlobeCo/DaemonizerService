@@ -31,7 +31,10 @@ namespace Daemonizer
         Timer timer;
         DayOfWeek dayOfTheWeek;
         List<PendingEvent> eventItems = new List<PendingEvent>();
-        AppConfig config;
+        AppConfig appConfig;
+
+        //FileLogger logger;
+        EventLogger logger;
 
         public ProcessService()
         {
@@ -42,10 +45,10 @@ namespace Daemonizer
         {       
             dayOfTheWeek = DateTime.Now.DayOfWeek;
             
-            config = AppConfig.Load("Avery Dennison", "Daemonizer");
-            string appDataPath = config.BaseDirectory;
-            string logDirectory = Path.Combine(appDataPath, config.LogDirectoryName);
-            string configDirectory = Path.Combine(appDataPath, config.ConfigDirectoryName);
+            appConfig = AppConfig.Load("GlobeCo", "Daemonizer");
+            string appDataPath = appConfig.BaseDirectory;
+            string logDirectory = Path.Combine(appDataPath, appConfig.LogDirectoryName);
+            string configDirectory = Path.Combine(appDataPath, appConfig.ConfigDirectoryName);
 
             if (!Directory.Exists(appDataPath))
                 Directory.CreateDirectory(appDataPath);
@@ -56,9 +59,14 @@ namespace Daemonizer
             if (!Directory.Exists(configDirectory))
                 Directory.CreateDirectory(configDirectory);
 
-            Log.LogPath = logDirectory;
-            Log.LogName = "daemonizer"; // extension is set automatically
-            Log.LogLevel = Log.Level.Info;
+
+            //FileLogger.LogPath = logDirectory;
+            //FileLogger.LogName = "daemonizer"; // extension is set automatically
+            //FileLogger.LogLevel = FileLogger.Level.Info;
+
+           // logger = FileLogger.Instance;
+
+            logger = EventLogger.Instance;
 
             DirectoryInfo info = new DirectoryInfo(configDirectory);
 
@@ -70,7 +78,7 @@ namespace Daemonizer
                     if (config != null)
                     {
                         configs.Add(config);
-                        Log.Info(String.Format("Loaded {0}", fileInfo.Name));
+                        logger.Info(String.Format("Loaded {0}", fileInfo.Name));
                     }
                 }
             }
@@ -83,7 +91,7 @@ namespace Daemonizer
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
 
-            Log.Info("Daemonizer service started");
+            logger.Info("Daemonizer service started");
         }
 
         protected override void OnStop()
@@ -93,12 +101,12 @@ namespace Daemonizer
                 if (!rp.Exited)
                     StopProcess(rp.Process);    
             }
-            Log.Info("Daemonizer service stopped");
+            logger.Info("Daemonizer service stopped");
         }
 
         Process StartProcess(Config config, ScheduledEvent schEvent)
         {
-            Log.Info(String.Format("Starting process {0} {1}", 
+            logger.Info(String.Format("Starting process {0} {1}", 
                 config.ExeName, schEvent.CommandLine));
 
             Process process = new Process();
@@ -115,7 +123,7 @@ namespace Daemonizer
 
             if (!process.Start())
             {
-                Log.Error(String.Format("Failed to start process {0}", config.ExeName));
+                logger.Error(String.Format("Failed to start process {0}", config.ExeName));
                 return null;
             }
             else
@@ -126,12 +134,12 @@ namespace Daemonizer
 
         void StopProcess(Process process)
         {
-            Log.Info(String.Format("Stopping process {0}", process.ProcessName));
+            logger.Info(String.Format("Stopping process {0}", process.ProcessName));
             process.CloseMainWindow();
             process.WaitForExit(WAIT_FOR_EXIT_MS);
             if (!process.HasExited)
             {
-                Log.Warn("Process did not exit, killing process!");
+                logger.Warn("Process did not exit, killing process!");
                 process.Kill();
                 process.WaitForExit();
             }
@@ -141,7 +149,7 @@ namespace Daemonizer
         {
             Process process = (Process)sender;
 
-            Log.Info(String.Format("Process {0} has exited with code {1}", 
+            logger.Info(String.Format("Process {0} has exited with code {1}", 
                 process.ProcessName, process.ExitCode));
 
             for (int inx = 0; inx < processes.Count; inx++)
@@ -156,12 +164,12 @@ namespace Daemonizer
 
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Log.Info(e.Data);
+            logger.Info(e.Data);
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
-            Log.Error(e.Data);
+            logger.Error(e.Data);
         }
 
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
@@ -187,14 +195,14 @@ namespace Daemonizer
         {
             eventItems.Clear();
 
-            Log.Info("Stopping previous day's processes");
+            logger.Info("Stopping previous day's processes");
             // Stop any running processes
             foreach (RunningProcess rp in processes)
             {
                 StopProcess(rp.Process);
             }
 
-            Log.Info("Loading new daily schedule");
+            logger.Info("Loading new daily schedule");
             // Load new daily schedule
             foreach (Config config in configs)
             {

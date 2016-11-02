@@ -20,6 +20,8 @@ namespace Daemonizer
 
         public static Config Load(string file)
         {
+            EventLogger logger = EventLogger.Instance;
+
             Config config = null;
             try
             {
@@ -29,12 +31,12 @@ namespace Daemonizer
                 }
                 else
                 {
-                    Log.Warn("Config file not found");
+                    logger.Warn("Config file not found");
                 }
             }
             catch (Exception ex)
             {
-                Log.Error("Error loading config file: {0}", ex);
+                logger.Error("Error loading config file: {0}", ex);
             }
 
             return config;
@@ -42,6 +44,8 @@ namespace Daemonizer
 
         public static void Save(Config config, string file)
         {
+            EventLogger logger = EventLogger.Instance;
+
             try
             {
                 string output = JsonConvert.SerializeObject(config, Formatting.Indented);
@@ -49,7 +53,7 @@ namespace Daemonizer
             }
             catch (Exception ex)
             {
-                Log.Error("Error saving config file", ex);
+                logger.Error("Error saving config file", ex);
             }
         }
     }
