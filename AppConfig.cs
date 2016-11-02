@@ -49,6 +49,8 @@ namespace Daemonizer
 
         public static void Save(AppConfig config, string file)
         {
+            EventLogger logger = EventLogger.Instance;
+
             try
             {
                 string output = JsonConvert.SerializeObject(config, Formatting.Indented);
@@ -56,7 +58,7 @@ namespace Daemonizer
             }
             catch (Exception ex)
             {
-                Log.Error("Error saving config file", ex);
+                logger.Error("Error saving config file", ex);
             }
         }
     }

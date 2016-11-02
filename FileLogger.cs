@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,42 +7,46 @@ using System.Threading.Tasks;
 
 namespace Daemonizer
 {
-    public static class Log
+    public class FileLogger : LogBase
     {
-        public enum Level : int
+
+        private static FileLogger instance;
+
+        public static FileLogger Instance
         {
-            Debug,
-            Info,
-            Warn,
-            Error
+            get 
+            {
+                if (instance ==null)
+                {
+                    instance = new FileLogger();
+                }
+                return instance;
+            }
         }
 
         public static string LogPath { get; set; }
         public static string LogName { get; set; }
         public static string LogExtension { get; set; }
-        public static Level LogLevel { get; set; }
         public static long MaxLogSize { get; set; }
 
-        static bool created;
         static StreamWriter logStream;
         static int logNumber;
 
-        static Log()
+        private FileLogger()
         {
-            LogPath = Path.GetTempPath();
-            LogName = "application";
             LogExtension = ".log";
-            LogLevel = Level.Info;
             MaxLogSize = 10000000; // 10 MB
             logNumber = 1;
+
+            CreateLog();
         }
 
-        static string LogFullPath()
+        string LogFullPath()
         {
             return Path.Combine(LogPath, LogName + logNumber.ToString() + LogExtension);
         }
 
-        static void CreateLog()
+        private void CreateLog()
         {
             try
             {
@@ -68,13 +71,7 @@ namespace Daemonizer
             }
         }
 
-        static string TimeStamp()
-        {
-            return DateTime.Now.ToShortDateString() 
-                + " " + DateTime.Now.ToShortTimeString() + ":" ;
-        }
-
-        static void WriteMessage(string message, params object[] args)
+        override protected void WriteMessage(Level LogLevel, string message, params object[] args)
         {
             try
             {
@@ -105,53 +102,5 @@ namespace Daemonizer
             }
         }
 
-        public static void Debug(string message, params object[] args)
-        {
-            if (LogLevel >= Level.Debug)
-            { 
-                if (!created)
-                {
-                    CreateLog();
-                }
-
-                WriteMessage(message, args);
-            }
-        }
-
-        public static void Info(string message, params object[] args)
-        {
-            if (LogLevel >= Level.Info)
-            {
-                if (!created)
-                {
-                    CreateLog();
-                }
-
-                WriteMessage(message, args);
-            }
-        }
-
-        public static void Warn(string message, params object[] args)
-        {
-            if (LogLevel >= Level.Warn)
-            {
-                if (!created)
-                {
-                    CreateLog();
-                }
-
-                WriteMessage(message, args);
-            }
-        }
-
-        public static void Error(string message, params object[] args)
-        {
-            if (!created)
-            {
-                CreateLog();
-            }
-
-            WriteMessage(message, args);   
-        }
     }
 }
