@@ -35,6 +35,7 @@ namespace Daemonizer
 
         //FileLogger logger;
         EventLogger logger;
+        FileSystemWatcher watcher;
 
         public ProcessService()
         {
@@ -91,6 +92,8 @@ namespace Daemonizer
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
 
+            BeginWatch();
+
             logger.Info("Daemonizer service started");
         }
 
@@ -101,6 +104,9 @@ namespace Daemonizer
                 if (!rp.Exited)
                     StopProcess(rp.Process);    
             }
+
+            EndWatch();
+
             logger.Info("Daemonizer service stopped");
         }
 
@@ -296,6 +302,31 @@ namespace Daemonizer
             {
                 processes.Remove(rp);
             }
+        }
+
+        private void BeginWatch()
+        {
+            if (watcher == null)
+            {
+                watcher = new FileSystemWatcher();
+                watcher.Path = Path.Combine(appConfig.BaseDirectory, appConfig.ConfigDirectoryName);
+                watcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName;
+                watcher.Filter = "*.conf";
+                watcher.Changed += new FileSystemEventHandler(OnWatchChanged);
+                watcher.Created += new FileSystemEventHandler(OnWatchChanged);
+            }
+            watcher.EnableRaisingEvents = true;
+        }
+
+        private void EndWatch()
+        {
+            watcher.EnableRaisingEvents = false;
+        }
+
+        private void OnWatchChanged(object source, FileSystemEventArgs e)
+        {
+            // Conf file change detected, do appropriate things here.
+            logger.Info("Config file change detected in file {0}", e.Name);
         }
 
         public void StartService(string[] args)
