@@ -38,4 +38,5 @@ Release/
 ipch/
 obj/
 bin/
+packages/
 ReadMe.txt

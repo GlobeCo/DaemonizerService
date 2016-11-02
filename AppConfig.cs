@@ -24,6 +24,10 @@ namespace Daemonizer
                     Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
                     company,
                     app);
+                
+                if (Directory.Exists(path))
+                    Directory.CreateDirectory(path);
+
                 string file = Path.Combine(path, "config.json");
 
                 if (File.Exists(file))
