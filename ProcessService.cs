@@ -69,21 +69,6 @@ namespace Daemonizer
 
             logger = EventLogger.Instance;
 
-            DirectoryInfo info = new DirectoryInfo(configDirectory);
-
-            foreach (FileInfo fileInfo in info.GetFiles())
-            {
-                if (fileInfo.Extension == ".conf")
-                {
-                    Config config = Config.Load(fileInfo.FullName);
-                    if (config != null)
-                    {
-                        configs.Add(config);
-                        logger.Info(String.Format("Loaded {0}", fileInfo.Name));
-                    }
-                }
-            }
-
             LoadNewSchedule();
             EvaluateSchedule();
             
@@ -170,7 +155,7 @@ namespace Daemonizer
 
         private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            logger.Info(e.Data);
+            logger.Debug(e.Data);
         }
 
         private void Process_ErrorDataReceived(object sender, DataReceivedEventArgs e)
@@ -181,14 +166,7 @@ namespace Daemonizer
         private void Timer_Elapsed(object sender, ElapsedEventArgs e)
         {
             timer.Enabled = false;
-            var now = DateTime.Now;
-
-            if (now.DayOfWeek != dayOfTheWeek)
-            {
-                dayOfTheWeek = now.DayOfWeek;
-                LoadNewSchedule();
-            }
-
+            
             // Check all scheduled items
             EvaluateSchedule();
 
@@ -201,28 +179,42 @@ namespace Daemonizer
         {
             eventItems.Clear();
 
-            logger.Info("Stopping previous day's processes");
+            logger.Info("Stopping previous running processes");
             // Stop any running processes
             foreach (RunningProcess rp in processes)
             {
                 StopProcess(rp.Process);
             }
 
-            logger.Info("Loading new daily schedule");
+            string configDirectory = Path.Combine(appConfig.BaseDirectory, appConfig.ConfigDirectoryName);
+            DirectoryInfo info = new DirectoryInfo(configDirectory);
+
+            configs.Clear();
+            foreach (FileInfo fileInfo in info.GetFiles())
+            {
+                if (fileInfo.Extension == ".conf")
+                {
+                    Config config = Config.Load(fileInfo.FullName);
+                    if (config != null)
+                    {
+                        configs.Add(config);
+                        logger.Info(String.Format("Loaded {0}", fileInfo.Name));
+                    }
+                }
+            }
+
+            logger.Info("Loading new schedule");
             // Load new daily schedule
             foreach (Config config in configs)
             {
                 foreach (ScheduledEvent schEvent in config.Schedule)
                 {
-                    if (schEvent.DayOfTheWeek == DateTime.Now.DayOfWeek)
+                    PendingEvent pe = new PendingEvent
                     {
-                        PendingEvent pe = new PendingEvent
-                        {
-                            EventConfig = config,
-                            Event = schEvent
-                        };
-                        eventItems.Add(pe);
-                    }
+                        EventConfig = config,
+                        Event = schEvent
+                    };
+                    eventItems.Add(pe);   
                 }
             }
         }
@@ -234,22 +226,25 @@ namespace Daemonizer
 
             foreach(PendingEvent pendEvent in eventItems)
             {
-                var startTime = pendEvent.Event.StartHour * 60 + pendEvent.Event.StartMinute;
-                var endTime = pendEvent.Event.EndHour * 60 + pendEvent.Event.EndMinute;
-                if (time >= startTime && time <= endTime)
+                if (DateTime.Now.DayOfWeek == pendEvent.Event.DayOfTheWeek)
                 {
-                    Process process = StartProcess(pendEvent.EventConfig, pendEvent.Event);
-
-                    if (process != null)
+                    var startTime = pendEvent.Event.StartHour * 60 + pendEvent.Event.StartMinute;
+                    var endTime = pendEvent.Event.EndHour * 60 + pendEvent.Event.EndMinute;
+                    if (time >= startTime && time <= endTime)
                     {
-                        RunningProcess rp = new RunningProcess
+                        Process process = StartProcess(pendEvent.EventConfig, pendEvent.Event);
+
+                        if (process != null)
                         {
-                            Process = process,
-                            Event = pendEvent.Event,
-                            Exited = false
-                        };
-                        processes.Add(rp);
-                        purgeList.Add(pendEvent);
+                            RunningProcess rp = new RunningProcess
+                            {
+                                Process = process,
+                                Event = pendEvent.Event,
+                                Exited = false
+                            };
+                            processes.Add(rp);
+                            purgeList.Add(pendEvent);
+                        }
                     }
                 }
             }
@@ -327,6 +322,7 @@ namespace Daemonizer
         {
             // Conf file change detected, do appropriate things here.
             logger.Info("Config file change detected in file {0}", e.Name);
+            LoadNewSchedule();
         }
 
         public void StartService(string[] args)

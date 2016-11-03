@@ -55,7 +55,11 @@ namespace Daemonizer
 
         override protected void WriteMessage(Level LogLevel, string message, params object[] args)
         {
+#if DEBUG
+            Console.Out.WriteLine(message, args);
+#else
             EventLog.WriteEntry(sSource, string.Format(message, args), getEventLogEntryType(LogLevel));
+#endif
         }
     }
 }
