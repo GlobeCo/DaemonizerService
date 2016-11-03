@@ -16,7 +16,15 @@ namespace Daemonizer
             Debug
         }
 
+        public enum LogType : int
+        {
+            Unknown,
+            File,
+            Event
+        }
+
         public static Level LogLevel { get; set; }
+        abstract public LogType LoggerType { get; }
 
         protected static bool created;
 

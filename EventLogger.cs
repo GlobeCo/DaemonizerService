@@ -23,6 +23,9 @@ namespace Daemonizer
             }
         }
 
+
+        override public LogType LoggerType { get { return LogType.Event; } }
+
         public static string sSource { get; set; }
         public static string sLog { get; set; }
 

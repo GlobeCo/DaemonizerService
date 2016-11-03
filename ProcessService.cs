@@ -34,7 +34,7 @@ namespace Daemonizer
         AppConfig appConfig;
 
         //FileLogger logger;
-        EventLogger logger;
+        EventLogger logger = EventLogger.Instance;
         FileSystemWatcher watcher;
 
         public ProcessService()
@@ -51,23 +51,23 @@ namespace Daemonizer
             string logDirectory = Path.Combine(appDataPath, appConfig.LogDirectoryName);
             string configDirectory = Path.Combine(appDataPath, appConfig.ConfigDirectoryName);
 
+            if (logger.LoggerType == LogBase.LogType.File)
+            {
+                FileLogger.LogPath = logDirectory;
+                FileLogger.LogName = "daemonizer"; // extension is set automatically
+                FileLogger.LogLevel = FileLogger.Level.Info;
+
+                //logger = FileLogger.Instance;
+            }
+
             if (!Directory.Exists(appDataPath))
                 Directory.CreateDirectory(appDataPath);
 
-            if (!Directory.Exists(logDirectory))
-                Directory.CreateDirectory(logDirectory);
+            if (!Directory.Exists(logDirectory) && logger.LoggerType == LogBase.LogType.File)
+               Directory.CreateDirectory(logDirectory);
 
             if (!Directory.Exists(configDirectory))
                 Directory.CreateDirectory(configDirectory);
-
-
-            //FileLogger.LogPath = logDirectory;
-            //FileLogger.LogName = "daemonizer"; // extension is set automatically
-            //FileLogger.LogLevel = FileLogger.Level.Info;
-
-           // logger = FileLogger.Instance;
-
-            logger = EventLogger.Instance;
 
             LoadNewSchedule();
             EvaluateSchedule();
