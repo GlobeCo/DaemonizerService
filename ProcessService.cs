@@ -69,6 +69,9 @@ namespace Daemonizer
             if (!Directory.Exists(configDirectory))
                 Directory.CreateDirectory(configDirectory);
 
+            logger = EventLogger.Instance;
+            logger.LogLevel = LogBase.Level.Info;
+
             LoadNewSchedule();
             EvaluateSchedule();
             
@@ -132,7 +135,9 @@ namespace Daemonizer
             {
                 logger.Warn("Process did not exit, killing process!");
                 process.Kill();
+                logger.Info("Waiting for process to die...");
                 process.WaitForExit();
+                logger.Info("The process is dead. Long live the process.");
             }
         }
 
@@ -265,19 +270,13 @@ namespace Daemonizer
             {
                 var endTime = rp.Event.EndHour * 60 + rp.Event.EndMinute;
 
-                // Past time or next day
+                // Past time, force it to quit
                 if (time > endTime)
                 {
-                    if (!rp.Exited)
-                    {
-                        StopProcess(rp.Process);
-                    }
-                    else
-                    {
-                        purgeList.Add(rp);
-                    }
+                    StopProcess(rp.Process);
+                    purgeList.Add(rp);
                 }
-                else if (rp.Exited) // application has terminated
+                else if (rp.Exited) // application has terminated itself
                 {
                     if (rp.Event.AutoRestart)
                     {
