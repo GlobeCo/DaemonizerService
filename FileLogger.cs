@@ -24,6 +24,8 @@ namespace Daemonizer
             }
         }
 
+        override public LogType LoggerType { get { return LogType.File; } }
+
         public static string LogPath { get; set; }
         public static string LogName { get; set; }
         public static string LogExtension { get; set; }
