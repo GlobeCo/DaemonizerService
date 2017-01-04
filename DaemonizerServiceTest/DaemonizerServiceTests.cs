@@ -29,6 +29,23 @@ namespace DaemonizerServiceTest
         public void InBetweenDaysInclusive_WithValidDays_NoRollover_OnStart_IsWithin()
         {
             // arrange
+            DayOfWeek TestDay = DayOfWeek.Sunday;
+            DayOfWeek StartDay = DayOfWeek.Sunday;
+            DayOfWeek EndDay = DayOfWeek.Saturday;
+            bool result;
+            ProcessService service = new ProcessService();
+
+            // act
+            result = service.InBetweenDaysInclusive(TestDay, StartDay, EndDay);
+
+            // assert
+            Assert.AreEqual(true, result, "Inclusive in between day not calculated correctly.");
+        }
+
+        [TestMethod]
+        public void InBetweenDaysInclusive_WithValidDays_NoRollover_OnEnd_IsWithin()
+        {
+            // arrange
             DayOfWeek TestDay = DayOfWeek.Saturday;
             DayOfWeek StartDay = DayOfWeek.Sunday;
             DayOfWeek EndDay = DayOfWeek.Saturday;
@@ -91,6 +108,40 @@ namespace DaemonizerServiceTest
 
             // assert
             Assert.AreEqual(false, result, "Inclusive in between day with week rollover not calculated correctly.");
+        }
+
+        [TestMethod]
+        public void InBetweenDaysInclusive_WithValidDays_Rollover_OnStart_IsWithin()
+        {
+            // arrange
+            DayOfWeek TestDay = DayOfWeek.Thursday;
+            DayOfWeek StartDay = DayOfWeek.Thursday;
+            DayOfWeek EndDay = DayOfWeek.Tuesday;
+            bool result;
+            ProcessService service = new ProcessService();
+
+            // act
+            result = service.InBetweenDaysInclusive(TestDay, StartDay, EndDay);
+
+            // assert
+            Assert.AreEqual(true, result, "Inclusive in between day not calculated correctly.");
+        }
+
+        [TestMethod]
+        public void InBetweenDaysInclusive_WithValidDays_Rollover_OnEnd_IsWithin()
+        {
+            // arrange
+            DayOfWeek TestDay = DayOfWeek.Tuesday;
+            DayOfWeek StartDay = DayOfWeek.Thursday;
+            DayOfWeek EndDay = DayOfWeek.Tuesday;
+            bool result;
+            ProcessService service = new ProcessService();
+
+            // act
+            result = service.InBetweenDaysInclusive(TestDay, StartDay, EndDay);
+
+            // assert
+            Assert.AreEqual(true, result, "Inclusive in between day not calculated correctly.");
         }
 
         [TestMethod]
